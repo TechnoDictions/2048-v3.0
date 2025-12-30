@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Structure expected: { "score": 1000, "playerName": "ProGamer" }
     const SUPABASE_URL = 'https://jjiksqklsjtbzpejdfjh.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_Quo24j_dbFu0N-h08QZi6g_53BHCh_u';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let saveScoreTimeout;
 
@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchGlobalScore() {
         try {
             // Get High Score and Top 10 together
-            const { data: topScores, error } = await supabase
+            const { data: topScores, error } = await supabaseClient
                 .from('scores')
                 .select('*')
                 .order('score', { ascending: false })
@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // This updates the score if player exists, or creates a new one if they don't
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('scores')
                 .upsert({
                     playerName: newName,
@@ -648,7 +648,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validate against Server
         try {
            // Replace everything inside the 'try' block with this:
-const { data, error } = await supabase
+const { data, error } = await supabaseClient
     .from('scores')
     .select('*')
     .eq('playerName', inputName)
