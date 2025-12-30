@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2048 Game | Blazas</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="Img/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="heading">
+            <div class="player-info" style="display: none;">
+                <span id="player-display"></span>
+                <button id="change-player-btn">Log Out</button>
+                <button id="signin-btn"
+                    style="display: none; background-color: #bebebe; background-color: rgb(21, 141, 61); border: none; color:white; margin-left: 20px; padding: 5px 8px; font-size: 15px; border-radius: 8px;">Sign
+                    In</button>
+            </div>
+            <div class="title-wrapper">
+                <div class="title-wrapper">
+                    <div class="brand">Blazas</div>
+                    <h1 class="title">2048</h1>
+                </div>
+                <div class="scores-container">
+                    <div class="score-container">0</div>
+                    <div class="best-container">0</div>
+                    <div class="global-best-container" title="Global (World)">0</div>
+                </div>
+            </div>
+            <div class="game-intro">
+                <p class="game-intro-text">Join the numbers and get to the <strong>2048 tile!</strong></p>
+                <div class="buttons-wrapper">
+                    <button class="undo-button">Undo (9)</button>
+                    <button class="merge-button">Merge (2)</button>
+                    <button class="restart-button">New Game</button>
+                </div>
+            </div>
+
+            <div class="game-container">
+                <div class="grid-container">
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                    <div class="grid-cell"></div>
+                </div>
+
+                <div class="tile-container">
+                    <!-- Tiles will be inserted here by JavaScript -->
+                </div>
+
+                <div class="game-message">
+                    <p></p>
+                    <div class="lower">
+                        <a class="keep-playing-button">Keep playing</a>
+                        <a class="retry-button">Try again</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Stats Wrapper -->
+        <div class="stats-wrapper">
+            <div class="stats-container" id="comparison-container">
+                <h3>Score Comparison</h3>
+                <canvas id="comparisonChart"></canvas>
+            </div>
+
+            <div class="stats-container" id="leaderboard-container">
+                <h3>Global Leaderboard</h3>
+                <canvas id="leaderboardChart"></canvas>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 Blazas Game. All rights reserved.</p>
+        </footer>
+
+        <p class="game-explanation">
+            <strong class="important">How to play:</strong> Use your <strong>arrow keys</strong> to move the tiles. When
+            two tiles with the same number touch, they <strong>merge into one!</strong>
+        </p>
+        <div id="name-modal" class="modal-overlay">
+            <div class="modal-content">
+                <h2 id="modal-title">Welcome to 2048</h2>
+                <p>Enter your username to join the Global Leaderboard!</p>
+                <input type="text" id="player-name-input" placeholder="Your Name" maxlength="15">
+                <p id="name-error" class="error-msg"></p>
+                <button id="start-game-btn" class="start-btn">Start Game</button>
+                <p class="toggle-mode">
+                    <span id="toggle-text">Returning player?</span>
+                    <a href="#" id="toggle-mode-btn">Login here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
