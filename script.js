@@ -578,16 +578,23 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // NEW: Fetch the saved score from Supabase right now!
     async function syncExistingPlayer() {
+        const savedPass = localStorage.getItem('2048-player-password');
         const { data, error } = await supabaseClient
             .from('scores')
             .select('score')
             .eq('playerName', playerName)
+            .eq('password', savedPass) // Checks name AND password
             .single();
 
         if (data) {
             playerBestScore = data.score;
-            updateBestScore(); // This updates the UI box
-            updateComparisonChart(); // This updates the top chart
+            updateBestScore();
+            updateComparisonChart();
+        } else {
+            // If password doesn't match or user deleted, log them out
+            localStorage.removeItem('2048-player-name');
+            localStorage.removeItem('2048-player-password');
+            location.reload();
         }
         initGame();
     }
@@ -659,72 +666,71 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.getElementById('start-game-btn').addEventListener('click', async () => {
+document.getElementById('start-game-btn').addEventListener('click', async () => {
         const inputName = document.getElementById('player-name-input').value.trim();
+        const inputPass = document.getElementById('player-password-input').value; // Get password
         const errorMsg = document.getElementById('name-error');
 
         if (!inputName) {
-            errorMsg.textContent = "Please enter a name!"; // Use error msg instead of alert
+            errorMsg.textContent = "Please enter a name!";
             return;
         }
 
-        // Validate against Server
         try {
-           // Replace everything inside the 'try' block with this:
-// Find your Login/Register logic and update it:
-const { data, error } = await supabaseClient
-    .from('scores')
-    .select('*')
-    .eq('playerName', inputName)
-    .single();
+            // Check if user exists
+            const { data, error } = await supabaseClient
+                .from('scores')
+                .select('*')
+                .eq('playerName', inputName)
+                .single();
 
-if (isLoginMode) {
-    // LOGIN MODE
-    if (!data) {
-        errorMsg.textContent = "User not found!";
-        return;
-    }
-    
-    // Check if the password matches
-    const inputPass = document.getElementById('player-password-input').value; // You'll add this ID to HTML
-    if (data.password !== inputPass) {
-        errorMsg.textContent = "Incorrect password!";
-        return;
-    }
-    
-    playerBestScore = data.score || 0;
-} else {
-    // REGISTER MODE
-    if (data) {
-        errorMsg.textContent = "Name taken! Login if it's you.";
-        return;
-    }
-    
-    const newPass = document.getElementById('player-password-input').value;
-    if (newPass.length < 4) {
-        errorMsg.textContent = "Password must be at least 4 characters.";
-        return;
-    }
+            if (isLoginMode) {
+                // LOGIN LOGIC
+                if (!data) {
+                    errorMsg.textContent = "User not found!";
+                    return;
+                }
+                if (data.password !== inputPass) {
+                    errorMsg.textContent = "Incorrect password!";
+                    return;
+                }
+                playerBestScore = data.score || 0;
+            } else {
+                // REGISTER LOGIC
+                if (data) {
+                    errorMsg.textContent = "Name taken! Login if it's you.";
+                    return;
+                }
+                if (inputPass.length < 4) {
+                    errorMsg.textContent = "Password must be at least 4 characters.";
+                    return;
+                }
 
-    // Save NEW user with their password
-    const { error: regError } = await supabaseClient
-        .from('scores')
-        .insert([{ playerName: inputName, score: 0, password: newPass }]);
-        
-    if (regError) {
-        errorMsg.textContent = "Registration failed!";
-        return;
-    }
-}
-    // New user: Create their first record
-    await saveGlobalScore(0, inputName);
-}
+                const { error: regError } = await supabaseClient
+                    .from('scores')
+                    .insert([{ playerName: inputName, score: 0, password: inputPass }]);
+                
+                if (regError) {
+                    errorMsg.textContent = "Registration failed!";
+                    return;
+                }
+                playerBestScore = 0;
+            }
+
+            // SUCCESS logic
+            playerName = inputName;
+            localStorage.setItem('2048-player-name', playerName);
+            localStorage.setItem('2048-player-password', inputPass); // Save password for refresh
+            document.getElementById('name-modal').style.display = 'none';
+            
+            showPlayerInfo(playerName);
+            initGame();
+
         } catch (e) {
             console.error("Validation error", e);
-            errorMsg.textContent = "Server error. Try again.";
-            return;
+            errorMsg.textContent = "Account error. Try again.";
         }
-
+    });
         // Success - Set Name
         playerName = inputName;
         localStorage.setItem('2048-player-name', playerName);
