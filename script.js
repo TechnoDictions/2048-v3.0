@@ -245,34 +245,38 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function updateScore() {
-        // Recalculate score: Sum of all numbers on the grid
-        score = 0;
-        for (let r = 0; r < gridSize; r++) {
-            for (let c = 0; c < gridSize; c++) {
-                score += grid[r][c];
-            }
-        }
-        scoreElement.textContent = score;
-
-        // Update Player Best Score (session-only for guests, persistent for logged-in players)
-        if (score > playerBestScore) {
-            playerBestScore = score;
-            updateBestScore();
-        }
-
-        // Update Comparison Chart immediately on score change
-        updateComparisonChart();
-
-        // Save to server for logged-in players only
-        if (playerName && playerName !== "Guest" && score > 100) {
-            // Debounce API call to avoid spamming
-            if (saveScoreTimeout) clearTimeout(saveScoreTimeout);
-            saveScoreTimeout = setTimeout(() => {
-                saveGlobalScore(score, playerName);
-            }, 2000);
+function updateScore() {
+    // 1. Calculate Score (Sum of grid)
+    score = 0;
+    for (let r = 0; r < gridSize; r++) {
+        for (let c = 0; c < gridSize; c++) {
+            score += grid[r][c];
         }
     }
+    
+    // 2. Update UI Immediately
+    scoreElement.textContent = score;
+
+    // 3. Update Local Best Score Immediately (So the player sees it instantly)
+    if (score > playerBestScore) {
+        playerBestScore = score;
+        updateBestScore();
+    }
+
+    // 4. Update Charts
+    updateComparisonChart();
+
+    // 5. Save to Database (Debounced by 2 seconds)
+    // We only try to save if we have a real user and a meaningful score
+    if (playerName && playerName !== "Guest" && score > 0) {
+        if (saveScoreTimeout) clearTimeout(saveScoreTimeout);
+        
+        saveScoreTimeout = setTimeout(() => {
+            // We pass the CURRENT score and CURRENT best
+            saveGlobalScore(score, playerName);
+        }, 2000);
+    }
+}
 
     function updateBestScore() {
         bestScoreElement.textContent = playerBestScore;
@@ -308,33 +312,33 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function saveGlobalScore(newScore, newName) {
-        if (!newName || newName === "Guest") return;
+    if (!newName || newName === "Guest") return;
 
-        // 1. ONLY proceed if the new score is better than what we have in memory
-        if (newScore <= playerBestScore) {
-            console.log("Score not high enough to save.");
-            return;
+    // Get the password so Supabase allows the update
+    const savedPass = localStorage.getItem('2048-player-password');
+
+    try {
+        console.log(`Saving score: ${newScore} for player: ${newName}`); // Debug log
+
+        const { error } = await supabaseClient
+            .from('scores')
+            .upsert({
+                playerName: newName,
+                score: newScore,
+                password: savedPass // <--- CRITICAL: Was missing before
+            }, { onConflict: 'playerName' });
+
+        if (error) {
+            console.error("Supabase Save Error:", error.message);
+        } else {
+            console.log("Score saved successfully!");
+            // Refresh the leaderboard to show the new rank
+            fetchGlobalScore(); 
         }
-
-        try {
-            // 2. Since we know newScore is higher, we update it in Supabase
-            const { error } = await supabaseClient
-                .from('scores')
-                .upsert({
-                    playerName: newName,
-                    score: newScore
-                }, { onConflict: 'playerName' });
-
-            if (!error) {
-                // 3. Update our local memory so we don't save again until we beat THIS score
-                playerBestScore = newScore;
-                fetchGlobalScore(); // Refresh charts
-            }
-        } catch (e) {
-            console.error("Save Error:", e);
-        }
+    } catch (e) {
+        console.error("Connection Error:", e);
     }
-
+}
     function showMessage(wonGame) {
         if (wonGame) {
             messageContainer.classList.add('game-won');
@@ -853,3 +857,4 @@ document.addEventListener('DOMContentLoaded', () => {
         updateView();
     });
 });
+
