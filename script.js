@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-      async function saveGlobalScore(newScore, newName) {
+    async function saveGlobalScore(newScore, newName) {
     if (!newName || newName === "Guest") return;
 
     // 1. ONLY proceed if the new score is better than what we have in memory
@@ -572,18 +572,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Player Identity & Persistence ---
 
     // 1. Check if we already have a player
-    if (playerName) {
-        // Auto-login
-        document.getElementById('name-modal').style.display = 'none';
-        showPlayerInfo(playerName);
-        initGame();
-    } else {
-        // GUEST MODE: Start immediately without modal
-        document.getElementById('name-modal').style.display = 'none';
-        playerName = "Guest";
-        showPlayerInfo(playerName);
+   if (playerName && playerName !== "Guest") {
+    document.getElementById('name-modal').style.display = 'none';
+    showPlayerInfo(playerName);
+    
+    // NEW: Fetch the saved score from Supabase right now!
+    async function syncExistingPlayer() {
+        const { data, error } = await supabaseClient
+            .from('scores')
+            .select('score')
+            .eq('playerName', playerName)
+            .single();
+
+        if (data) {
+            playerBestScore = data.score;
+            updateBestScore(); // This updates the UI box
+            updateComparisonChart(); // This updates the top chart
+        }
         initGame();
     }
+    syncExistingPlayer();
+} else {
+    // Guest mode logic
+    document.getElementById('name-modal').style.display = 'none';
+    playerName = "Guest";
+    showPlayerInfo(playerName);
+    initGame();
+}
 
     function showPlayerInfo(name) {
         document.querySelector('.player-info').style.display = 'flex';
@@ -848,4 +863,3 @@ if (isLoginMode) {
     // Start - Logic handled by auto-login check above
     // initGame(); // Removed duplicate call
 });
-
