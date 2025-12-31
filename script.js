@@ -321,25 +321,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function saveGlobalScore(newScore, newName) {
-        if (!newName || newName === "Guest") return;
+      async function saveGlobalScore(newScore, newName) {
+    if (!newName || newName === "Guest") return;
 
-        try {
-            // This updates the score if player exists, or creates a new one if they don't
-            const { error } = await supabaseClient
-                .from('scores')
-                .upsert({
-                    playerName: newName,
-                    score: newScore
-                }, { onConflict: 'playerName' });
-
-            if (!error) {
-                fetchGlobalScore(); // Refresh the numbers on screen
-            }
-        } catch (e) {
-            console.error("Save Error:", e);
-        }
+    // 1. ONLY proceed if the new score is better than what we have in memory
+    if (newScore <= playerBestScore) {
+        console.log("Score not high enough to save.");
+        return; 
     }
+
+    try {
+        // 2. Since we know newScore is higher, we update it in Supabase
+        const { error } = await supabaseClient
+            .from('scores')
+            .upsert({ 
+                playerName: newName, 
+                score: newScore 
+            }, { onConflict: 'playerName' });
+ 
+        if (!error) {
+            // 3. Update our local memory so we don't save again until we beat THIS score
+            playerBestScore = newScore; 
+            fetchGlobalScore(); // Refresh charts
+        }
+    } catch (e) {
+        console.error("Save Error:", e);
+    }
+}
 
     function showMessage(wonGame) {
         if (wonGame) {
@@ -840,3 +848,4 @@ if (isLoginMode) {
     // Start - Logic handled by auto-login check above
     // initGame(); // Removed duplicate call
 });
+
