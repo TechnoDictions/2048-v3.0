@@ -311,29 +311,36 @@ function updateScore() {
         }
     }
 
-    async function saveGlobalScore(newScore, newName) {
+ async function saveGlobalScore(newScore, newName) {
     if (!newName || newName === "Guest") return;
 
-    // Get the password so Supabase allows the update
+    // 1. Get the password (CRITICAL FIX: Supabase needs this)
     const savedPass = localStorage.getItem('2048-player-password');
 
-    try {
-        console.log(`Saving score: ${newScore} for player: ${newName}`); // Debug log
+    // 2. THE SAFETY CHECK
+    // If the new score is strictly LOWER than our best, do not save.
+    // We remove the '=' so that if they are equal (new record), it DOES save.
+    if (newScore < playerBestScore) {
+        console.log(`Score ${newScore} is lower than best ${playerBestScore}. Not saving.`);
+        return;
+    }
 
+    try {
+        console.log(`New High Score! Saving ${newScore} for ${newName}...`);
+        
         const { error } = await supabaseClient
             .from('scores')
             .upsert({
                 playerName: newName,
                 score: newScore,
-                password: savedPass // <--- CRITICAL: Was missing before
+                password: savedPass // Include the password!
             }, { onConflict: 'playerName' });
 
         if (error) {
             console.error("Supabase Save Error:", error.message);
         } else {
-            console.log("Score saved successfully!");
-            // Refresh the leaderboard to show the new rank
-            fetchGlobalScore(); 
+            console.log("Database synced successfully.");
+            fetchGlobalScore(); // Update the leaderboard
         }
     } catch (e) {
         console.error("Connection Error:", e);
@@ -857,4 +864,5 @@ function updateScore() {
         updateView();
     });
 });
+
 
