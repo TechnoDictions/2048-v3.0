@@ -671,6 +671,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Validate against Server
         try {
            // Replace everything inside the 'try' block with this:
+// Find your Login/Register logic and update it:
 const { data, error } = await supabaseClient
     .from('scores')
     .select('*')
@@ -678,18 +679,43 @@ const { data, error } = await supabaseClient
     .single();
 
 if (isLoginMode) {
+    // LOGIN MODE
     if (!data) {
-        errorMsg.textContent = "User not found! Check spelling or Register.";
+        errorMsg.textContent = "User not found!";
         return;
     }
-    // Success: Load the player's saved score from the database
+    
+    // Check if the password matches
+    const inputPass = document.getElementById('player-password-input').value; // You'll add this ID to HTML
+    if (data.password !== inputPass) {
+        errorMsg.textContent = "Incorrect password!";
+        return;
+    }
+    
     playerBestScore = data.score || 0;
-    updateBestScore();
 } else {
+    // REGISTER MODE
     if (data) {
         errorMsg.textContent = "Name taken! Login if it's you.";
         return;
     }
+    
+    const newPass = document.getElementById('player-password-input').value;
+    if (newPass.length < 4) {
+        errorMsg.textContent = "Password must be at least 4 characters.";
+        return;
+    }
+
+    // Save NEW user with their password
+    const { error: regError } = await supabaseClient
+        .from('scores')
+        .insert([{ playerName: inputName, score: 0, password: newPass }]);
+        
+    if (regError) {
+        errorMsg.textContent = "Registration failed!";
+        return;
+    }
+}
     // New user: Create their first record
     await saveGlobalScore(0, inputName);
 }
