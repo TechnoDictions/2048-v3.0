@@ -246,33 +246,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 function updateScore() {
-    // 1. Calculate Score (Sum of grid)
+    // 1. Calculate Score
     score = 0;
     for (let r = 0; r < gridSize; r++) {
         for (let c = 0; c < gridSize; c++) {
             score += grid[r][c];
         }
     }
-    
-    // 2. Update UI Immediately
     scoreElement.textContent = score;
 
-    // 3. Update Local Best Score Immediately (So the player sees it instantly)
+    // 2. Update Visual Best Score Immediately (So it feels fast)
     if (score > playerBestScore) {
         playerBestScore = score;
         updateBestScore();
     }
 
-    // 4. Update Charts
     updateComparisonChart();
 
-    // 5. Save to Database (Debounced by 2 seconds)
-    // We only try to save if we have a real user and a meaningful score
-    if (playerName && playerName !== "Guest" && score > 0) {
+    // 3. Trigger Save
+    // We only try to save if we have a registered player
+    if (playerName && playerName !== "Guest") {
         if (saveScoreTimeout) clearTimeout(saveScoreTimeout);
-        
         saveScoreTimeout = setTimeout(() => {
-            // We pass the CURRENT score and CURRENT best
             saveGlobalScore(score, playerName);
         }, 2000);
     }
@@ -864,5 +859,6 @@ function updateScore() {
         updateView();
     });
 });
+
 
 
