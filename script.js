@@ -306,29 +306,47 @@ function updateScore() {
         }
     }
 
- async function saveGlobalScore(newScore, newName) {
+    async function saveGlobalScore(newScore, newName) {
     if (!newName || newName === "Guest") return;
 
-    // 1. Get the password (CRITICAL FIX: Supabase needs this)
+    // 1. Get the password
     const savedPass = localStorage.getItem('2048-player-password');
 
-    // 2. THE SAFETY CHECK
-    // If the new score is strictly LOWER than our best, do not save.
-    // We remove the '=' so that if they are equal (new record), it DOES save.
-    if (newScore < playerBestScore) {
-        console.log(`Score ${newScore} is lower than best ${playerBestScore}. Not saving.`);
-        return;
-    }
-
     try {
-        console.log(`New High Score! Saving ${newScore} for ${newName}...`);
+        // --- STEP A: CHECK THE DATABASE (The Truth Source) ---
+        // Before we save ANYTHING, we check what the database already has.
+        const { data: dbData, error: fetchError } = await supabaseClient
+            .from('scores')
+            .select('score')
+            .eq('playerName', newName)
+            .single();
+
+        // If the user exists in DB, check their score
+        if (dbData) {
+            const dbHighScore = dbData.score;
+            
+            // If the new score is NOT higher than the DB score, STOP.
+            if (newScore <= dbHighScore) {
+                console.log(`Safety Check: New score (${newScore}) is not higher than DB record (${dbHighScore}). Keeping DB record.`);
+                
+                // Optional: Sync local best score to match the true DB high score
+                if (playerBestScore < dbHighScore) {
+                    playerBestScore = dbHighScore;
+                    updateBestScore();
+                }
+                return; 
+            }
+        }
+
+        // --- STEP B: SAVE (Only happens if we passed the check) ---
+        console.log(`New Record! Overwriting DB. Old: ${dbData ? dbData.score : 0} -> New: ${newScore}`);
         
         const { error } = await supabaseClient
             .from('scores')
             .upsert({
                 playerName: newName,
                 score: newScore,
-                password: savedPass // Include the password!
+                password: savedPass 
             }, { onConflict: 'playerName' });
 
         if (error) {
@@ -341,7 +359,8 @@ function updateScore() {
         console.error("Connection Error:", e);
     }
 }
-    function showMessage(wonGame) {
+    
+   function showMessage(wonGame) {
         if (wonGame) {
             messageContainer.classList.add('game-won');
             messageText.textContent = 'You Win!';
@@ -859,6 +878,7 @@ function updateScore() {
         updateView();
     });
 });
+
 
 
 
