@@ -1,3 +1,32 @@
+// Global Game State Variables
+let grid = [];
+let score = 0;
+let playerName = localStorage.getItem('2048-player-name') || '';
+let playerBestScore = 0;
+let globalBestScore = 0;
+let globalBestPlayer = "Loading...";
+let leaderboardChart;
+let comparisonChart;
+
+// API Configuration
+const SUPABASE_URL = 'https://jjiksqklsjtbzpejdfjh.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_Quo24j_dbFu0N-h08QZi6g_53BHCh_u';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let saveScoreTimeout;
+let won = false;
+let keepPlaying = false;
+let touchStartX = 0;
+let touchStartY = 0;
+
+// Undo State
+let gameHistory = [];
+const maxUndos = 9;
+let undoCount = maxUndos;
+
+// Merge Powerup State
+const maxMerges = 2;
+let mergeCount = maxMerges;
 
 document.addEventListener('DOMContentLoaded', () => {
     const gridContainer = document.querySelector('.grid-container');
@@ -20,48 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Game Constants
     const gridSize = 4;
-
-    // Game State
-    let grid = [];
-    let score = 0;
-
-    // Chart Instances
-    let leaderboardChart;
-    let comparisonChart;
-
-    // Score State
-    let playerName = localStorage.getItem('2048-player-name') || '';
-
-    // Player Best Score: For logged-in players, fetched from server
-    // For guests, this is session-only (not persisted)
-    let playerBestScore = 0;
-
-    // Global Best: Highest on Internet (Fetched from API)
-    let globalBestScore = 0;
-    let globalBestPlayer = "Loading...";
-
-    // API Configuration
-    // TODO: Create a bin on https://jsonbin.io/ or similar and paste URL here
-    // Structure expected: { "score": 1000, "playerName": "ProGamer" }
-    const SUPABASE_URL = 'https://jjiksqklsjtbzpejdfjh.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_Quo24j_dbFu0N-h08QZi6g_53BHCh_u';
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    let saveScoreTimeout;
-
-    let won = false;
-    let keepPlaying = false;
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    // Undo State
-    let gameHistory = [];
-    const maxUndos = 9;
-    let undoCount = maxUndos;
-
-    // Merge Powerup State
-    const maxMerges = 2;
-    let mergeCount = maxMerges;
 
     // Initialize Game
     function initGame() {
@@ -256,7 +243,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        // updateChart(); // Old tile chart update - removed for separate logic
     }
 
     function updateScore() {
@@ -568,15 +554,14 @@ document.addEventListener('DOMContentLoaded', () => {
         touchStartY = 0;
     }, { passive: true });
 
-
     // --- Player Identity & Persistence ---
 
     // 1. Check if we already have a player
     if (playerName && playerName !== "Guest") {
-        document.getElementById('name-modal').style.display = 'none';
+        nameModal.style.display = 'none';
         showPlayerInfo(playerName);
 
-        // NEW: Fetch the saved score from Supabase right now!
+        // Fetch the saved score from Supabase right now!
         async function syncExistingPlayer() {
             const savedPass = localStorage.getItem('2048-player-password');
             const { data, error } = await supabaseClient
@@ -601,7 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
         syncExistingPlayer();
     } else {
         // Guest mode logic
-        document.getElementById('name-modal').style.display = 'none';
+        nameModal.style.display = 'none';
         playerName = "Guest";
         showPlayerInfo(playerName);
         initGame();
@@ -635,7 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (signinBtn) {
         signinBtn.addEventListener('click', () => {
-            document.getElementById('name-modal').style.display = 'flex';
+            nameModal.style.display = 'flex';
             document.getElementById('player-name-input').focus();
             // Switch to Login Mode by default for convenience? Or keep standard?
             // Let's toggle to Login mode if they clicked Sign In
@@ -666,8 +651,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    document.getElementById('start-game-btn').addEventListener('click', async () => {
-        const inputName = document.getElementById('player-name-input').value.trim();
+    startGameBtn.addEventListener('click', async () => {
+        const inputName = playerNameInput.value.trim();
         const inputPass = document.getElementById('player-password-input').value; // Get password
         const errorMsg = document.getElementById('name-error');
 
@@ -721,7 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playerName = inputName;
             localStorage.setItem('2048-player-name', playerName);
             localStorage.setItem('2048-player-password', inputPass); // Save password for refresh
-            document.getElementById('name-modal').style.display = 'none';
+            nameModal.style.display = 'none';
 
             showPlayerInfo(playerName);
             initGame();
@@ -731,166 +716,140 @@ document.addEventListener('DOMContentLoaded', () => {
             errorMsg.textContent = "Account error. Try again.";
         }
     });
-    // Success - Set Name
-    playerName = inputName;
-    localStorage.setItem('2048-player-name', playerName);
-    document.getElementById('name-modal').style.display = 'none';
 
-    // If we were Guest, we are now Player.
-    // If we were playing as Guest, do we reset game? 
-    // User said "sign in if he want to save records". 
-    // Maybe keep current game state but attach name? 
-    // But initGame resets grid... 
-    // Let's NOT call initGame if grid is not empty? 
-    // Or just let it reset for simplicity to load "User's" state? 
-    // Usually login loads user profile. Let's restart to be clean.
-    showPlayerInfo(playerName);
-
-    // Only restart if we mistakenly re-initialized or need to load data
-    // For now, simple restart to sync everything clean.
-    initGame();
-
-    // Initial score save (only for new registers to reserve name immediately)
-    if (!isLoginMode) {
-        saveGlobalScore(0, playerName);
+    // 3. Change Player
+    const changeBtn = document.getElementById('change-player-btn');
+    if (changeBtn) {
+        changeBtn.addEventListener('click', () => {
+            localStorage.removeItem('2048-player-name');
+            localStorage.removeItem('2048-player-password');
+            playerName = '';
+            document.querySelector('.player-info').style.display = 'none';
+            window.location.reload();
+        });
     }
-});
 
-// 3. Change Player
-const changeBtn = document.getElementById('change-player-btn');
-if (changeBtn) {
-    changeBtn.addEventListener('click', () => {
-        // Removed confirm to prevent blocking issues
-        localStorage.removeItem('2048-player-name');
-        playerName = '';
-        document.querySelector('.player-info').style.display = 'none';
-        window.location.reload();
-    });
-}
+    // --- Chart Functions ---
 
-// --- Chart Logic ---
+    // 1. Leaderboard Chart (Bottom)
+    function initLeaderboardChart() {
+        const ctx = document.getElementById('leaderboardChart').getContext('2d');
+        if (leaderboardChart) leaderboardChart.destroy();
 
-// 1. Leaderboard Chart (Bottom)
-function initLeaderboardChart() {
-    const ctx = document.getElementById('leaderboardChart').getContext('2d');
-    if (leaderboardChart) leaderboardChart.destroy();
-
-    leaderboardChart = new Chart(ctx, {
-        type: 'bar', // Horizontal bar
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Score',
-                data: [],
-                backgroundColor: 'rgba(16, 185, 129, 0.7)', // Emerald
-                borderColor: 'rgba(16, 185, 129, 1)',
-                borderWidth: 1,
-                barThickness: 15
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            maintainAspectRatio: false,
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: { color: '#ffffff', font: { weight: 'bold' } },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+        leaderboardChart = new Chart(ctx, {
+            type: 'bar', // Horizontal bar
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Score',
+                    data: [],
+                    backgroundColor: 'rgba(16, 185, 129, 0.7)', // Emerald
+                    borderColor: 'rgba(16, 185, 129, 1)',
+                    borderWidth: 1,
+                    barThickness: 15
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { color: '#ffffff', font: { weight: 'bold' } },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    },
+                    y: {
+                        ticks: { color: '#ffffff', font: { weight: 'bold', size: 12 } },
+                        grid: { display: false }
+                    }
                 },
-                y: {
-                    ticks: { color: '#ffffff', font: { weight: 'bold', size: 12 } },
-                    grid: { display: false }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                title: { display: false } // Title in HTML
-            },
-            animation: { duration: 500 },
-            responsive: true
-        }
-    });
-}
-
-function updateLeaderboardChartData(leaderboardData) {
-    if (!leaderboardChart) return;
-
-    let top10 = leaderboardData.slice(0, 10);
-
-    const names = top10.map(item => item.playerName);
-    const scores = top10.map(item => item.score);
-
-    leaderboardChart.data.labels = names;
-    leaderboardChart.data.datasets[0].data = scores;
-    leaderboardChart.update();
-}
-
-// 2. Comparison Chart (Top)
-function initComparisonChart() {
-    const ctx = document.getElementById('comparisonChart').getContext('2d');
-    if (comparisonChart) comparisonChart.destroy();
-
-    comparisonChart = new Chart(ctx, {
-        type: 'bar', // Vertical bar for comparison
-        data: {
-            labels: ['Current Score', 'Your Best', 'Global Record'],
-            datasets: [{
-                label: 'Points',
-                data: [0, 0, 0],
-                backgroundColor: [
-                    'rgba(59, 130, 246, 0.8)', // Blue for Current
-                    'rgba(139, 92, 246, 0.8)', // Purple for Best
-                    'rgba(239, 68, 68, 0.8)'   // Red for Global
-                ],
-                borderColor: [
-                    'rgba(59, 130, 246, 1)',
-                    'rgba(139, 92, 246, 1)',
-                    'rgba(239, 68, 68, 1)'
-                ],
-                borderWidth: 1,
-                barPercentage: 0.6
-            }]
-        },
-        options: {
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { color: '#ffffff', font: { weight: 'bold' } },
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                plugins: {
+                    legend: { display: false },
+                    title: { display: false } // Title in HTML
                 },
-                x: {
-                    ticks: { color: '#ffffff', font: { weight: 'bold', size: 14 } },
-                    grid: { display: false }
-                }
+                animation: { duration: 500 },
+                responsive: true
+            }
+        });
+    }
+
+    function updateLeaderboardChartData(leaderboardData) {
+        if (!leaderboardChart) return;
+
+        let top10 = leaderboardData.slice(0, 10);
+
+        const names = top10.map(item => item.playerName);
+        const scores = top10.map(item => item.score);
+
+        leaderboardChart.data.labels = names;
+        leaderboardChart.data.datasets[0].data = scores;
+        leaderboardChart.update();
+    }
+
+    // 2. Comparison Chart (Top)
+    function initComparisonChart() {
+        const ctx = document.getElementById('comparisonChart').getContext('2d');
+        if (comparisonChart) comparisonChart.destroy();
+
+        comparisonChart = new Chart(ctx, {
+            type: 'bar', // Vertical bar for comparison
+            data: {
+                labels: ['Current Score', 'Your Best', 'Global Record'],
+                datasets: [{
+                    label: 'Points',
+                    data: [0, 0, 0],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)', // Blue for Current
+                        'rgba(139, 92, 246, 0.8)', // Purple for Best
+                        'rgba(239, 68, 68, 0.8)'   // Red for Global
+                    ],
+                    borderColor: [
+                        'rgba(59, 130, 246, 1)',
+                        'rgba(139, 92, 246, 1)',
+                        'rgba(239, 68, 68, 1)'
+                    ],
+                    borderWidth: 1,
+                    barPercentage: 0.6
+                }]
             },
-            plugins: {
-                legend: { display: false },
-                tooltip: { enabled: true }
-            },
-            animation: { duration: 300 },
-            responsive: true
-        }
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#ffffff', font: { weight: 'bold' } },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    },
+                    x: {
+                        ticks: { color: '#ffffff', font: { weight: 'bold', size: 14 } },
+                        grid: { display: false }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: true }
+                },
+                animation: { duration: 300 },
+                responsive: true
+            }
+        });
+        updateComparisonChart();
+    }
+
+    function updateComparisonChart() {
+        if (!comparisonChart) return;
+
+        // Use maximums to make sure data is sensible
+        const current = score;
+        const best = Math.max(score, playerBestScore);
+        const global = Math.max(score, globalBestScore);
+
+        comparisonChart.data.datasets[0].data = [current, best, global];
+        comparisonChart.update();
+    }
+
+    // Handle window resize for positioning
+    window.addEventListener('resize', () => {
+        updateView();
     });
-    updateComparisonChart();
-}
-
-function updateComparisonChart() {
-    if (!comparisonChart) return;
-
-    // Use maximums to make sure data is sensible
-    const current = score;
-    const best = Math.max(score, playerBestScore);
-    const global = Math.max(score, globalBestScore);
-
-    comparisonChart.data.datasets[0].data = [current, best, global];
-    comparisonChart.update();
-}
-
-// Handle window resize for positioning
-window.addEventListener('resize', () => {
-    updateView();
 });
-
-    // Start - Logic handled by auto-login check above
-    // initGame(); // Removed duplicate call
