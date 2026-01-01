@@ -86,6 +86,34 @@ document.addEventListener('DOMContentLoaded', () => {
         updateView();
     }
 
+    // Link the button to the function
+document.getElementById('google-login-btn').addEventListener('click', async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            // This sends them back to your current page after logging in
+            redirectTo: window.location.origin 
+        }
+    });
+
+    if (error) console.error("Login error:", error.message);
+});
+
+// Check if a user is ALREADY logged in when the page loads
+async function checkUser() {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+        // Hide the login button and show player info
+        document.getElementById('google-login-btn').style.display = 'none';
+        document.getElementById('player-badge').style.display = 'flex';
+        
+        document.getElementById('player-name').innerText = user.user_metadata.full_name;
+        document.getElementById('player-img').src = user.user_metadata.avatar_url;
+    }
+}
+
+checkUser();
     // Save state for Undo
     function saveState() {
         if (undoCount > 0) {
@@ -883,6 +911,7 @@ function updateScore() {
         updateView();
     });
 });
+
 
 
 
