@@ -665,7 +665,7 @@ function updateScore() {
             if (isLoginMode) {
                 modalTitle.textContent = "Welcome Back!";
                 startBtn.textContent = "Resume Game";
-                toggleText.textContent = "New player?";
+                toggleText.textContent = "Forget Password Then Email at blazasinfo@gmail.com with your user-name   OR  New player?";
                 toggleBtn.textContent = "Register here";
             } else {
                 modalTitle.textContent = "Welcome to 2048";
@@ -883,6 +883,7 @@ function updateScore() {
         updateView();
     });
 });
+
 
 
 
