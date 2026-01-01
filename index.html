@@ -104,6 +104,15 @@
             <div class="modal-content">
                 <h2 id="modal-title">Welcome to 2048</h2>
                 <p>Enter your username to join the Global Leaderboard!</p>
+                <button id="google-login-btn" class="google-btn">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_Logo.svg" alt="Google Logo">
+  <span>Sign in with Google</span>
+</button>
+
+<div id="player-badge" style="display: none;">
+  <img id="player-img" src="" alt="Profile">
+  <span id="player-name"></span>
+</div>
                 <input type="text" id="player-name-input" placeholder="Your Name" maxlength="15">
                 <input type="password" id="player-password-input" placeholder="Enter Password" class="modal-input">
                 <p id="name-error" class="error-msg"></p>
@@ -121,3 +130,4 @@
 </body>
 
 </html>
+
