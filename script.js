@@ -803,10 +803,15 @@ function updateScore() {
 
         let top10 = leaderboardData.slice(0, 10);
 
-        const names = top10.map(item => item.playerName);
+       const namesWithRank = top10.map((item, index) => {
+            const rank = index + 1;
+            return `${rank}  ${item.playerName}`; 
+        });
+
         const scores = top10.map(item => item.score);
 
-        leaderboardChart.data.labels = names;
+        // Update chart
+        leaderboardChart.data.labels = namesWithRank;
         leaderboardChart.data.datasets[0].data = scores;
         leaderboardChart.update();
     }
@@ -878,7 +883,6 @@ function updateScore() {
         updateView();
     });
 });
-
 
 
 
