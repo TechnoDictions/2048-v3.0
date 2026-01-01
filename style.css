@@ -493,10 +493,10 @@ body {
     color: #cbd5e1;
     margin-bottom: 20px;
 }
-
 .google-btn {
   display: flex;
   align-items: center;
+  margin: 10px auto;
   background-color: #ffffff;
   color: #1f1f1f;
   border: 1px solid #747775;
@@ -518,7 +518,6 @@ body {
   height: 18px;
   margin-right: 12px;
 }
-
 #player-name-input {
     width: 100%;
     padding: 12px;
@@ -820,4 +819,3 @@ footer p {
         padding: 5px 10px;
     }
 }
-
