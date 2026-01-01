@@ -85,8 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initComparisonChart(); // Initialize comparison
         updateView();
     }
-
-    // Link the button to the function
+// Link the button to the function
 document.getElementById('google-login-btn').addEventListener('click', async () => {
     const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -693,7 +692,7 @@ function updateScore() {
             if (isLoginMode) {
                 modalTitle.textContent = "Welcome Back!";
                 startBtn.textContent = "Resume Game";
-                toggleText.textContent = "Forget Password Then Email at blazasinfo@gmail.com with your user-name   OR  New player?";
+                toggleText.textContent = "Forget Password Then Email at blazasinfo@gmail.com with your user-name   OR  New player? ";
                 toggleBtn.textContent = "Register here";
             } else {
                 modalTitle.textContent = "Welcome to 2048";
@@ -911,8 +910,6 @@ function updateScore() {
         updateView();
     });
 });
-
-
 
 
 
